@@ -167,6 +167,9 @@ def test_mget_on_backend_down():
     keys = ['key-1', 'key-2', 'kkk-3']
     assert_fail('Connection refused|reset by peer', conn.mget, *keys)
 
+    all_redis[0].start()
+    all_redis[1].start()
+
 def test_mset_on_backend_down():
     all_redis[0].stop()
     conn = redis.Redis(nc.host(),nc.port())
@@ -177,6 +180,9 @@ def test_mset_on_backend_down():
     assert_fail('Connection refused',conn.mset,default_kv)
 
     
+    all_redis[0].start()
+    all_redis[1].start()
+
 def test_mget_pipeline():
     conn = redis.Redis(nc.host(),nc.port())
     pipe = conn.pipeline(transaction=False)
@@ -185,14 +191,15 @@ def test_mget_pipeline():
     keys = default_kv.keys()
     pipe.mget(keys)
     kv = {}
-    for i in range(10000):
+    for i in range(large):
         kv['kkk-%s' % i] = os.urandom(100)
     for k,v in kv.items():
         pipe.set(k,v)
     for k in kv.keys():
         pipe.get(k)
-    pipe.execute()
+    rst = pipe.execute()
 
+    print rst
     #check the result
     keys = default_kv.keys()
 
